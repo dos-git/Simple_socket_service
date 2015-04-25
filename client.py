@@ -8,21 +8,21 @@ port = 4444
 
 while True:
 
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        print "Socket fd[%s] successfully created " % s.fileno()
 
-        print "CONNECTING to ip [%s] port [%s] fd[%s]" % (addr, port, s.fileno())
+        print "Socket fd[%s] successfully created " % s.fileno()
+        print "[FD:%s][IP:%s][PORT:%s] connecting" % (s.fileno(),addr, port)
         s.connect((addr, port))
-        #data = s.recv(1024)
-        #print "Received [%s]" % data
+
         s.send("DOMINO BOSS")
         data = s.recv(1024)
         print "Received [%s]" % data
-        #s.close()
-        print data
+
     except socket.error as err:
+
+        # ERRNO 111 - connection refused - no server to realize connection
         print "%s [%s]" % (err.strerror, err.errno)
 
     finally:
