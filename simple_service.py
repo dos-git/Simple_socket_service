@@ -6,34 +6,61 @@ addr = "127.0.0.1"
 #port = 1 
 port = 4444 
 
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-s.settimeout(3)     # set timeout for 3 seconds
+class ConnectionPassive(object):
 
-print "Socket fd[%s] successfully created" %  s.fileno()
+    def __init__(self, connection_name, local_ip, local_port):
+        self.connectio_name = connection_name
+        self.local_ip_address = local_ip
+        self.local_port_nr = local_port
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.socket.setblocking(0)
+        self.socket.settimeout(3)               # timeout for accepting connection
+        self.fd_nr = self.socket.fileno()       # get file descriptor number
 
-try:
-    # IP address should be bound with port just one time
-    s.bind((addr, port))
-    print "Socket has been successfully bound."
-except socket.error as err:
-    print "Socket binding has failed - [%s][ERRNO:%s]" % (err.strerror, err.errno)
+    def Bind(self, addr, port):
 
+        try:
+            # IP address should be bound with port just one time
+            self.socket.bind((addr, port))
+            print "Socket has been successfully bound."
+            self.socket.listen(1)
+        except socket.error as err:
+            print "Socket binding has failed - [%s][ERRNO:%s]" % (err.strerror, err.errno)
+
+    def Accept_Connection(self):
+
+        conn, addr_conn = self.socket.accept()
+        return conn, addr_conn
 # max connection's peer that should be handled
-s.listen(1)
+
 conn = None
 
+counter = 0
+data_to_send = "BACK SEND"
+
+cp = ConnectionPassive("Conn_Passive",addr, port)
+cp.Bind(addr, port)
 while True:
 
     try:
-        print "[FD:%s][IP:%s][PORT:%s] Listening" % (s.fileno(), addr, port)
-        conn, addr_2 = s.accept()
+        print "[FD:%s][IP:%s][PORT:%s] Listening" % (cp.fd_nr, addr, port)
+        conn, addr_2 = cp.Accept_Connection()
         print "[FD:%s][IP:%s][PORT:%s] Accepting connection..." % (conn.fileno(), addr_2[0], addr_2[1])
+
+
+        #conn.send("STEFANO BOSS")
+
+        if counter < 5:
+
+            conn.send(data_to_send)
+        counter += 1
+
 
         data = conn.recv(1024)
         print "Received [%s]" % data
 
-        conn.send("STEFANO BOSS")
+
         conn.close()   # works
         #s.close()      # error - bad descriptor
 
@@ -55,5 +82,5 @@ while True:
             time.sleep(2)
 
 # terminate socket
-if s:
-    s.close()
+if cp.socket:
+    cp.socket.close()
